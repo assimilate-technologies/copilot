@@ -70,7 +70,7 @@ const ChatView = ({ sessionID }) => {
   return (
     <Flex
       direction={"column"}
-      height={"77vh"}
+      height={"85vh"}
       width={"100%"}
       maxWidth={"4xl"}
       mx={"auto"}
