@@ -102,7 +102,7 @@ const ChatView = ({ sessionID }) => {
               value={promptMessage}
               onChange={(event) => setPromptMessage(event.target.value)}
               onKeyDown={(event) => {
-                if (event.code == "Enter" && event.metaKey && promptMessage) {
+                if (event.code == "Enter" && promptMessage && !event.shiftKey && !event.ctrlKey && !event.altKey) {
                   handleSendMessage();
                   setPromptMessage("");
                 }
