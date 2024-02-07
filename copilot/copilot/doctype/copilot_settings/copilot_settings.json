@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-06-21 13:00:34.366049",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "openai_api_key",
+  "openai_model",
+  "db_connection_string",
+  "categories_tables_json"
+ ],
+ "fields": [
+  {
+   "default": "gpt-3.5-turbo",
+   "fieldname": "openai_model",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "OpenAI Model",
+   "options": "gpt-3.5-turbo\ngpt-3.5-turbo-16k\ntext-davinci-003\ngpt-4\ngpt-4-32k",
+   "reqd": 1
+  },
+  {
+   "fieldname": "openai_api_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "OpenAI API Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "db_connection_string",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "DB Connection String",
+   "reqd": 1
+  },
+  {
+   "description": "For example:\n[\n  {\n    category: \"User\",\n    tables: [\n      \"tabUser\",\n      \"tabUser Type\"\n    ]\n  }\n]",
+   "fieldname": "categories_tables_json",
+   "fieldtype": "JSON",
+   "label": "Categories Tables JSON"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-02-04 22:14:07.057703",
+ "modified_by": "Administrator",
+ "module": "CoPilot",
+ "name": "Copilot Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

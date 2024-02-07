@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include copilot *.css
+recursive-include copilot *.csv
+recursive-include copilot *.html
+recursive-include copilot *.ico
+recursive-include copilot *.js
+recursive-include copilot *.json
+recursive-include copilot *.md
+recursive-include copilot *.png
+recursive-include copilot *.py
+recursive-include copilot *.svg
+recursive-include copilot *.txt
+recursive-exclude copilot *.pyc
