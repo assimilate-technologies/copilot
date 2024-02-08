@@ -22,9 +22,9 @@ set_verbose(True)
 
 question = input("Enter your question:")
 
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = ""
 
-db = SQLDatabase.from_uri("mariadb://root:c658fd14b@15.206.247.148:3306/_6802f4ff327b48ce")
+db = SQLDatabase.from_uri("")
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
