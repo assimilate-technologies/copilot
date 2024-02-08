@@ -15,12 +15,16 @@ from langchain.chains.openai_tools import create_extraction_chain_pydantic
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from typing import List
-from langchain.globals import set_verbose, set_debug
+# from langchain.globals import set_verbose, set_debug
 
-set_debug(True)
-set_verbose(True)
+# set_debug(True)
+# set_verbose(True)
 
-question = input("Enter your question:")
+# question = input("Enter your question:")
+
+question = "What is designation of Priyanka Belekar?"
+
+print(question)
 
 os.environ["OPENAI_API_KEY"] = ""
 
@@ -28,7 +32,7 @@ db = SQLDatabase.from_uri("")
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
-
+# --
 class Table(BaseModel):
     """Table in SQL database."""
 
@@ -41,7 +45,10 @@ Employee
 User
 Leave"""
 category_chain = create_extraction_chain_pydantic(Table, llm, system_message=system)
-category_chain.invoke({ "input": question })
+
+print(category_chain.invoke({ "input": question }))
+
+# --
 
 def get_tables(categories: List[Table]) -> List[str]:
     tables = []
@@ -62,16 +69,24 @@ def get_tables(categories: List[Table]) -> List[str]:
 
 
 table_chain = category_chain | get_tables  # noqa
-table_chain.invoke({ "input": question })
+print(table_chain.invoke({ "input": question }))
 
+# --
 
-query_chain = create_sql_query_chain(llm, db)
 # Convert "question" key to the "input" key expected by current table_chain.
 table_chain = {"input": itemgetter("question")} | table_chain
-# Set table_names_to_use using table_chain.
-full_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
 
-execute_query = QuerySQLDataBaseTool(db=db)
+# Create the SQL query chain.
+query_chain = create_sql_query_chain(llm, db)
+
+# Set table_names_to_use using table_chain.
+query_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
+
+print(query_chain.invoke({ "question": question }))
+
+execute_query_chain = QuerySQLDataBaseTool(db=db)
+
+# print(execute_query.invoke({ "query": query_chain.invoke({ "question": question }) }))
 
 answer_prompt = PromptTemplate.from_template(
     """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
@@ -84,8 +99,8 @@ Answer: """
 
 answer = answer_prompt | llm | StrOutputParser()
 chain = (
-    RunnablePassthrough.assign(query=full_chain).assign(
-        result=itemgetter("query") | execute_query
+    RunnablePassthrough.assign(query=query_chain).assign(
+        result=itemgetter("query") | execute_query_chain
     )
     | answer
 )
@@ -93,6 +108,7 @@ chain = (
 finalAnswer = chain.invoke({ "question": question })
 print(finalAnswer)
 
+# ------------------------------
 
 # table_names = "\n".join(db.get_usable_table_names())
 # table_names = "\n tabUser"
