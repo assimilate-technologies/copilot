@@ -15,14 +15,34 @@ from langchain.chains.openai_tools import create_extraction_chain_pydantic
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from typing import List
+from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
+
 # from langchain.globals import set_verbose, set_debug
+
+# examples
+examples = [
+    {
+        "input": "List all employees.",
+        "query": "SELECT * FROM `tabEmployee`;"
+    },
+    {
+        "input": "List all employees reporting to Manal Ghadge",
+        "query": "SELECT * FROM tabEmployee WHERE reports_to IN(SELECT name FROM tabEmployee WHERE first_name = 'Manal' AND last_name = 'Ghadge')",
+    },
+    {
+        "input": "Who is manager of Nikhil Kadam?",
+        "query": "SELECT * FROM tabEmployee WHERE name IN(SELECT reports_to FROM tabEmployee WHERE first_name = 'Nikhil' AND last_name = 'Kadam')",
+    },
+]
+
+# ------------
 
 # set_debug(True)
 # set_verbose(True)
 
-# question = input("Enter your question:")
+question = input("Enter your question:")
 
-question = "What is designation of Priyanka Belekar?"
+# question = "What is designation of Priyanka Belekar?"
 
 print(question)
 
@@ -46,7 +66,7 @@ User
 Leave"""
 category_chain = create_extraction_chain_pydantic(Table, llm, system_message=system)
 
-print(category_chain.invoke({ "input": question }))
+# print(category_chain.invoke({ "input": question }))
 
 # --
 
@@ -69,20 +89,29 @@ def get_tables(categories: List[Table]) -> List[str]:
 
 
 table_chain = category_chain | get_tables  # noqa
-print(table_chain.invoke({ "input": question }))
+# print(table_chain.invoke({ "input": question }))
 
 # --
 
 # Convert "question" key to the "input" key expected by current table_chain.
 table_chain = {"input": itemgetter("question")} | table_chain
 
+example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {query}")
+query_prompt = FewShotPromptTemplate(
+    examples=examples[:5],
+    example_prompt=example_prompt,
+    prefix="You are a mariadb expert. Given an input question, create a syntactically correct mariadb query to run. Unless otherwise specificed, do not return more than {top_k} rows.\n\nHere is the relevant table info: {table_info}\n\nBelow are a number of examples of questions and their corresponding SQL queries.",
+    suffix="User input: {input}\nSQL query: ",
+    input_variables=["input", "top_k", "table_info"],
+)
+
 # Create the SQL query chain.
-query_chain = create_sql_query_chain(llm, db)
+query_chain = create_sql_query_chain(llm, db, prompt=query_prompt)
 
 # Set table_names_to_use using table_chain.
 query_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
 
-print(query_chain.invoke({ "question": question }))
+# print(query_chain.invoke({ "question": question }))
 
 execute_query_chain = QuerySQLDataBaseTool(db=db)
 
