@@ -46,6 +46,8 @@ question = input("Enter your question:")
 
 print(question)
 
+question = question + "Always apply filter to fetch data only where name = 'AT012'"
+
 os.environ["OPENAI_API_KEY"] = ""
 
 db = SQLDatabase.from_uri("")
@@ -66,7 +68,7 @@ User
 Leave"""
 category_chain = create_extraction_chain_pydantic(Table, llm, system_message=system)
 
-# print(category_chain.invoke({ "input": question }))
+print(category_chain.invoke({ "input": question }))
 
 # --
 
@@ -89,7 +91,7 @@ def get_tables(categories: List[Table]) -> List[str]:
 
 
 table_chain = category_chain | get_tables  # noqa
-# print(table_chain.invoke({ "input": question }))
+print(table_chain.invoke({ "input": question }))
 
 # --
 
@@ -100,7 +102,13 @@ example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {
 query_prompt = FewShotPromptTemplate(
     examples=examples[:5],
     example_prompt=example_prompt,
-    prefix="You are a mariadb expert. Given an input question, create a syntactically correct mariadb query to run. Unless otherwise specificed, do not return more than {top_k} rows.\n\nHere is the relevant table info: {table_info}\n\nBelow are a number of examples of questions and their corresponding SQL queries.",
+    prefix="""
+    You are a mariadb expert.
+    Given an input question, create a syntactically correct mariadb query to run.
+    Unless otherwise specificed, do not return more than {top_k} rows.
+    \n\nHere is the relevant table info: {table_info}\n\n
+    Below are a number of examples of questions and their corresponding SQL queries.
+    """,
     suffix="User input: {input}\nSQL query: ",
     input_variables=["input", "top_k", "table_info"],
 )
@@ -111,7 +119,7 @@ query_chain = create_sql_query_chain(llm, db, prompt=query_prompt)
 # Set table_names_to_use using table_chain.
 query_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
 
-# print(query_chain.invoke({ "question": question }))
+print(query_chain.invoke({ "question": question }))
 
 execute_query_chain = QuerySQLDataBaseTool(db=db)
 
@@ -119,6 +127,7 @@ execute_query_chain = QuerySQLDataBaseTool(db=db)
 
 answer_prompt = PromptTemplate.from_template(
     """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
+    Currency is specified in DB column else use INR.
 
 Question: {question}
 SQL Query: {query}
