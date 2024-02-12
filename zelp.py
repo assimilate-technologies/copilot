@@ -44,9 +44,11 @@ question = input("Enter your question:")
 
 # question = "What is designation of Priyanka Belekar?"
 
-print(question)
+# print(question)
 
-question = question + "Always apply filter to fetch data only where name = 'AT012'"
+# question = question + ". Final result should not include salary or ctc column if employee != 'AT012'"
+
+print(question)
 
 os.environ["OPENAI_API_KEY"] = ""
 
@@ -83,7 +85,7 @@ def get_tables(categories: List[Table]) -> List[str]:
                 ]
             )
         elif category.name == "Leave":
-            tables.extend(["tabLeave"])
+            tables.extend(["tabLeave Allocation"])
         elif category.name == "Employee":
             tables.extend(["tabEmployee"])
         
@@ -98,6 +100,9 @@ print(table_chain.invoke({ "input": question }))
 # Convert "question" key to the "input" key expected by current table_chain.
 table_chain = {"input": itemgetter("question")} | table_chain
 
+employee_id = "AT012"
+additional_filter = "Result should not include salary or ctc column if employee != '" + employee_id + "'"
+
 example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {query}")
 query_prompt = FewShotPromptTemplate(
     examples=examples[:5],
@@ -105,7 +110,8 @@ query_prompt = FewShotPromptTemplate(
     prefix="""
     You are a mariadb expert.
     Given an input question, create a syntactically correct mariadb query to run.
-    Unless otherwise specificed, do not return more than {top_k} rows.
+    """ +additional_filter+ """
+    Unless otherwise specified, do not return more than {top_k} rows.
     \n\nHere is the relevant table info: {table_info}\n\n
     Below are a number of examples of questions and their corresponding SQL queries.
     """,
@@ -123,11 +129,13 @@ print(query_chain.invoke({ "question": question }))
 
 execute_query_chain = QuerySQLDataBaseTool(db=db)
 
-# print(execute_query.invoke({ "query": query_chain.invoke({ "question": question }) }))
+print(execute_query_chain.invoke({ "query": query_chain.invoke({ "question": question }) }))
 
 answer_prompt = PromptTemplate.from_template(
     """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
     Currency is specified in DB column else use INR.
+    If query do not return any result then reply "Sorry! I'm not aware about how to resolve your query or you do not have access to view this data.
+    My cool human creators are working day and night to add more features to me."
 
 Question: {question}
 SQL Query: {query}
