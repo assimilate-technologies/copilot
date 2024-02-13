@@ -33,6 +33,14 @@ examples = [
 @frappe.whitelist()
 def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 
+	print(frappe.session.user)
+
+	user_id = frappe.session.user
+	
+	employee_id = frappe.db.get_value("Employee", { "user_id": user_id }, "name")
+
+	print(employee_id)
+
 	question = prompt_message
 
 	openai_model = get_model_from_settings()
@@ -94,9 +102,12 @@ def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 	table_chain = category_chain | get_tables  # noqa
 	table_chain = {"input": itemgetter("question")} | table_chain
 
-	employee_id = "AT012"
-	additional_filter = "Result should not include salary or ctc column if employee != '" + employee_id + "'"
-
+	additional_filter = ""
+	if employee_id:
+		additional_filter = "If user is asking for salary or ctc column then only apply filter employee == '" + employee_id + "'"
+	else:
+		additional_filter = ""
+	
 	example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {query}")
 	query_prompt = FewShotPromptTemplate(
 		examples=examples[:5],
