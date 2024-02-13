@@ -101,7 +101,7 @@ print(table_chain.invoke({ "input": question }))
 table_chain = {"input": itemgetter("question")} | table_chain
 
 employee_id = "AT012"
-additional_filter = "Result should not include salary or ctc column if employee != '" + employee_id + "'"
+additional_filter = "If user is asking for salary or ctc column then only apply filter employee == '" + employee_id + "'"
 
 example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {query}")
 query_prompt = FewShotPromptTemplate(
