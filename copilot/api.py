@@ -14,22 +14,6 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain.globals import set_verbose, set_debug
 
-# examples
-examples = [
-    {
-        "input": "List all employees.",
-        "query": "SELECT * FROM `tabEmployee`;"
-    },
-    {
-        "input": "List all employees reporting to Manal Ghadge",
-        "query": "SELECT * FROM tabEmployee WHERE reports_to IN(SELECT name FROM tabEmployee WHERE first_name = 'Manal' AND last_name = 'Ghadge')",
-    },
-    {
-        "input": "Who is manager of Nikhil Kadam?",
-        "query": "SELECT * FROM tabEmployee WHERE name IN(SELECT reports_to FROM tabEmployee WHERE first_name = 'Nikhil' AND last_name = 'Kadam')",
-    },
-]
-
 @frappe.whitelist()
 def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 
@@ -46,8 +30,10 @@ def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 	openai_model = get_model_from_settings()
 	openai_api_key = get_key_from_settings()
 	db_connection_string = get_db_connection_string_from_settings()
+	examples = json.loads(get_examples_from_settings())
 
 	print(db_connection_string)
+	print(examples)
 
 	categoriesTablesJSON = get_categories_tables_json_from_settings()
 	categoriesTablesData = json.loads(categoriesTablesJSON)
@@ -188,4 +174,9 @@ def get_db_connection_string_from_settings():
 def get_categories_tables_json_from_settings():
 	return (
 		frappe.db.get_single_value("Copilot Settings", "categories_tables_json") or ""
+	)
+
+def get_examples_from_settings():
+	return (
+		frappe.db.get_single_value("Copilot Settings", "examples") or ""
 	)

@@ -8,7 +8,8 @@
   "openai_api_key",
   "openai_model",
   "db_connection_string",
-  "categories_tables_json"
+  "categories_tables_json",
+  "examples"
  ],
  "fields": [
   {
@@ -17,7 +18,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "OpenAI Model",
-   "options": "gpt-3.5-turbo\ngpt-3.5-turbo-16k\ntext-davinci-003\ngpt-4\ngpt-4-32k",
+   "options": "gpt-3.5-turbo\ngpt-3.5-turbo-0125\ngpt-3.5-turbo-0301\ngpt-3.5-turbo-0613\ngpt-3.5-turbo-1106\ngpt-3.5-turbo-16k\ngpt-3.5-turbo-16k-0613\ntext-davinci-003\ngpt-4\ngpt-4-32k",
    "reqd": 1
   },
   {
@@ -35,16 +36,26 @@
    "reqd": 1
   },
   {
+   "default": "[\n  {\n    \"category\": \"User\",\n    \"tables\": [\n      \"tabUser\",\n      \"tabUser Type\"\n    ]\n  },\n  {\n    \"category\": \"Employee\",\n    \"tables\": [\n      \"tabEmployee\"\n    ]\n  }\n]",
    "description": "For example:\n[\n  {\n    category: \"User\",\n    tables: [\n      \"tabUser\",\n      \"tabUser Type\"\n    ]\n  }\n]",
    "fieldname": "categories_tables_json",
    "fieldtype": "JSON",
-   "label": "Categories Tables JSON"
+   "label": "Categories Tables JSON",
+   "reqd": 1
+  },
+  {
+   "default": "[\n    {\n        \"input\": \"List all employees.\",\n        \"query\": \"SELECT * FROM `tabEmployee`;\"\n    },\n    {\n        \"input\": \"List all employees reporting to Manal Ghadge\",\n        \"query\": \"SELECT * FROM tabEmployee WHERE reports_to IN(SELECT name FROM tabEmployee WHERE first_name = 'Manal' AND last_name = 'Ghadge')\"\n    },\n    {\n        \"input\": \"Who is manager of Nikhil Kadam?\",\n        \"query\": \"SELECT * FROM tabEmployee WHERE name IN(SELECT reports_to FROM tabEmployee WHERE first_name = 'Nikhil' AND last_name = 'Kadam')\"\n    }\n]",
+   "description": "List of example input questions and answers in format\n[{ \"input\":\"&lt;input_question&gt;\": \"query\": \"output_query\" }]",
+   "fieldname": "examples",
+   "fieldtype": "JSON",
+   "label": "Examples",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-02-04 22:14:07.057703",
+ "modified": "2024-02-13 14:36:32.224114",
  "modified_by": "Administrator",
  "module": "CoPilot",
  "name": "Copilot Settings",
