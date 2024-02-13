@@ -7,12 +7,28 @@ from langchain_community.utilities import SQLDatabase
 from langchain.chains import create_sql_query_chain
 from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain.chains.openai_tools import create_extraction_chain_pydantic
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain.globals import set_verbose, set_debug
+
+# examples
+examples = [
+    {
+        "input": "List all employees.",
+        "query": "SELECT * FROM `tabEmployee`;"
+    },
+    {
+        "input": "List all employees reporting to Manal Ghadge",
+        "query": "SELECT * FROM tabEmployee WHERE reports_to IN(SELECT name FROM tabEmployee WHERE first_name = 'Manal' AND last_name = 'Ghadge')",
+    },
+    {
+        "input": "Who is manager of Nikhil Kadam?",
+        "query": "SELECT * FROM tabEmployee WHERE name IN(SELECT reports_to FROM tabEmployee WHERE first_name = 'Nikhil' AND last_name = 'Kadam')",
+    },
+]
 
 @frappe.whitelist()
 def get_chatbot_response(session_id: str, prompt_message: str) -> str:
@@ -76,17 +92,40 @@ def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 		return tables
 
 	table_chain = category_chain | get_tables  # noqa
-
-	query_chain = create_sql_query_chain(llm, db)
-	# Convert "question" key to the "input" key expected by current table_chain.
 	table_chain = {"input": itemgetter("question")} | table_chain
-	# Set table_names_to_use using table_chain.
-	full_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
 
-	execute_query = QuerySQLDataBaseTool(db=db)
+	employee_id = "AT012"
+	additional_filter = "Result should not include salary or ctc column if employee != '" + employee_id + "'"
+
+	example_prompt = PromptTemplate.from_template("User input: {input}\nSQL query: {query}")
+	query_prompt = FewShotPromptTemplate(
+		examples=examples[:5],
+		example_prompt=example_prompt,
+		prefix="""
+		You are a mariadb expert.
+		Given an input question, create a syntactically correct mariadb query to run.
+		""" +additional_filter+ """
+		Unless otherwise specified, do not return more than {top_k} rows.
+		\n\nHere is the relevant table info: {table_info}\n\n
+		Below are a number of examples of questions and their corresponding SQL queries.
+		""",
+		suffix="User input: {input}\nSQL query: ",
+		input_variables=["input", "top_k", "table_info"],
+	)
+
+	# Create the SQL query chain.
+	query_chain = create_sql_query_chain(llm, db, prompt=query_prompt)
+
+	# Set table_names_to_use using table_chain.
+	query_chain = RunnablePassthrough.assign(table_names_to_use=table_chain) | query_chain
+
+	execute_query_chain = QuerySQLDataBaseTool(db=db)
 
 	answer_prompt = PromptTemplate.from_template(
 		"""Given the following user question, corresponding SQL query, and SQL result, answer the user question.
+		Currency is specified in DB column else use INR.
+		If query do not return any result then reply "Sorry! I'm not aware about how to resolve your query or you do not have access to view this data.
+		My cool human creators are working day and night to add more features to me."
 
 	Question: {question}
 	SQL Query: {query}
@@ -96,8 +135,8 @@ def get_chatbot_response(session_id: str, prompt_message: str) -> str:
 
 	answer = answer_prompt | llm | StrOutputParser()
 	chain = (
-		RunnablePassthrough.assign(query=full_chain).assign(
-			result=itemgetter("query") | execute_query
+		RunnablePassthrough.assign(query=query_chain).assign(
+			result=itemgetter("query") | execute_query_chain
 		)
 		| answer
 	)
